@@ -1,0 +1,25 @@
+//@version=6
+indicator("Fed Net Liquidity", shorttitle="NetLiq", overlay=false)
+
+walcl = request.security("FRED:WALCL", "W", close)
+rrp = request.security("FRED:RRPONTSYD", "D", close)
+tga = request.security("FRED:WTREGEN", "W", close)
+
+net_liquidity = walcl - (rrp * 1000) - tga
+net_liquidity_trillions = net_liquidity / 1000000
+
+ma20 = ta.sma(net_liquidity_trillions, 20)
+
+p1 = plot(net_liquidity_trillions, title="Net Liquidity (Trillions USD)", color=color.new(#00BFFF, 0), linewidth=2)
+p2 = plot(ma20, title="20-Week MA", color=color.orange, linewidth=2)
+
+fill(p1, p2, 
+     color = net_liquidity_trillions > ma20 ? color.new(#00E676, 55) : color.new(#FF3D00, 55), 
+     title="Expansion/Contraction Zone")
+
+var table legend = table.new(position.top_right, 2, 2, border_width=1)
+if barstate.islast
+    table.cell(legend, 0, 0, "", bgcolor=color.new(color.green, 40), width=1, height=1)
+    table.cell(legend, 1, 0, "Above MA (Expansion)", text_color=color.white, text_size=size.tiny, text_halign=text.align_left)
+    table.cell(legend, 0, 1, "", bgcolor=color.new(color.red, 40), width=1, height=1)
+    table.cell(legend, 1, 1, "Below MA (Contraction)", text_color=color.white, text_size=size.tiny, text_halign=text.align_left)

@@ -1,0 +1,48 @@
+//@version=6
+indicator("Institutional Positioning (COT S&P 500 Asset Managers)", shorttitle="COT AssetMgr", overlay=false)
+
+import TradingView/LibraryCOT/6 as cot
+
+cftc_code = "13874A"
+
+net_long = cot.requestCommitmentOfTraders(
+     COTType = "Financial",
+     CFTCCode = cftc_code,
+     includeOptions = false,
+     metricName = "Asset Manager Positions",
+     metricDirection = "Long",
+     metricType = "All")
+
+net_short = cot.requestCommitmentOfTraders(
+     COTType = "Financial",
+     CFTCCode = cftc_code,
+     includeOptions = false,
+     metricName = "Asset Manager Positions",
+     metricDirection = "Short",
+     metricType = "All")
+
+net_position = net_long - net_short
+
+length = input.int(780, title="Percentile Lookback (trading days, ~3yr)")
+
+pos_percentrank = ta.percentrank(net_position, length)
+
+p1 = plot(pos_percentrank, title="Asset Manager Net Position Percentile", color=color.new(#00BFFF, 0), linewidth=2)
+hline(50, title="Median", color=color.gray, linestyle=hline.style_dashed)
+
+// 擁擠多單帶(紅):部位處於過去N期的高百分位,逆勢邏輯下留意獲利了結/反轉風險
+upper_crowd = hline(95, title="Crowded Long Upper", color=color.new(#FF3D00, 70), linestyle=hline.style_dotted)
+mid_crowd = hline(80, title="Crowded Long Threshold", color=color.new(#FF3D00, 70), linestyle=hline.style_dotted)
+fill(upper_crowd, mid_crowd, color=color.new(#FF3D00, 70), title="Crowded Long Zone")
+
+// 擁擠空單帶(綠):部位處於過去N期的低百分位,逆勢邏輯下可能是潛在反彈區
+lower_crowd = hline(20, title="Crowded Short Threshold", color=color.new(#00E676, 70), linestyle=hline.style_dotted)
+bottom_crowd = hline(5, title="Crowded Short Lower", color=color.new(#00E676, 70), linestyle=hline.style_dotted)
+fill(lower_crowd, bottom_crowd, color=color.new(#00E676, 70), title="Crowded Short Zone")
+
+var table legend = table.new(position.top_right, 2, 2, border_width=1)
+if barstate.islast
+    table.cell(legend, 0, 0, "", bgcolor=color.new(#FF3D00, 40), width=1, height=1)
+    table.cell(legend, 1, 0, "Crowded Long", text_color=color.white, text_size=size.tiny, text_halign=text.align_left)
+    table.cell(legend, 0, 1, "", bgcolor=color.new(#00E676, 40), width=1, height=1)
+    table.cell(legend, 1, 1, "Crowded Short", text_color=color.white, text_size=size.tiny, text_halign=text.align_left)

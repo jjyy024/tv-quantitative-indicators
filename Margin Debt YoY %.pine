@@ -1,0 +1,31 @@
+//@version=6
+indicator("Margin Debt YoY % (FRED proxy)", shorttitle="Margin Debt YoY", overlay=false)
+
+calc_yoy() =>
+    prev_close = close[4]
+    prev_close == 0 or na(prev_close) ? na : ((close - prev_close) / prev_close) * 100
+
+yoy_percent_change = request.security("FRED:BOGZ1FL663067003Q", "3M", calc_yoy())
+recession = request.security("FRED:USREC", "1M", close)
+
+plot(yoy_percent_change, title="YoY (%)", color=color.blue, linewidth=2)
+hline(0, title="Zero Line", color=color.gray, linestyle=hline.style_dashed)
+
+upper_hot = hline(45, title="Overheat Upper (45%)", color=color.new(color.red, 70), linestyle=hline.style_dotted)
+lower_hot = hline(20, title="Overheat Lower (20%)", color=color.new(color.red, 70), linestyle=hline.style_dotted)
+fill(upper_hot, lower_hot, color=color.new(color.red, 85), title="Overheat Zone")
+
+panic_top = hline(-20, title="Panic Upper (-20%)", color=color.new(color.green, 70), linestyle=hline.style_dotted)
+panic_bottom = hline(-45, title="Panic Lower (-45%)", color=color.new(color.green, 70), linestyle=hline.style_dotted)
+fill(panic_top, panic_bottom, color=color.new(color.green, 85), title="Panic Zone")
+
+bgcolor(recession == 1 ? color.new(color.gray, 80) : na, title="US Recession")
+
+var table legend = table.new(position.top_right, 2, 3, border_width=1)
+if barstate.islast
+    table.cell(legend, 0, 0, "", bgcolor=color.new(color.red, 40), width=1, height=1)
+    table.cell(legend, 1, 0, "Overheat", text_color=color.white, text_size=size.tiny, text_halign=text.align_left)
+    table.cell(legend, 0, 1, "", bgcolor=color.new(color.green, 40), width=1, height=1)
+    table.cell(legend, 1, 1, "Panic", text_color=color.white, text_size=size.tiny, text_halign=text.align_left)
+    table.cell(legend, 0, 2, "", bgcolor=color.new(color.gray, 40), width=1, height=1)
+    table.cell(legend, 1, 2, "Recession", text_color=color.white, text_size=size.tiny, text_halign=text.align_left)
